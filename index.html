@@ -133,6 +133,17 @@
     width:100%;font-family:inherit;font-size:13.5px;color:var(--ink);
     border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:#fbfcf8;resize:vertical;min-height:62px;
   }
+  .noteacts{display:flex;gap:10px;align-items:center;margin-top:7px}
+  .notesave{border:1px solid var(--ink);background:var(--ink);color:var(--lime);border-radius:999px;padding:7px 16px;font-size:13px}
+  .notehint{font-size:12px;color:var(--muted)}
+  .notaview{
+    grid-column:1/-1;margin:1px 0 3px 38px;padding:8px 11px;
+    font-family:inherit;font-size:13px;line-height:1.45;text-align:left;
+    color:var(--ink-soft);background:#fbfcf8;
+    border:1px solid var(--line);border-left:3px solid var(--lime-deep);border-radius:8px;
+    white-space:pre-wrap;overflow-wrap:anywhere;
+  }
+  .notaview:hover{background:#f3f6ea}
   .addrow{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:#fafbf7}
   .addrow input{flex:1;font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:999px;padding:8px 13px;background:#fff}
   .addrow button{border:1px solid var(--ink);background:var(--ink);color:var(--lime);border-radius:999px;padding:8px 16px;font-size:13.5px}
@@ -156,6 +167,7 @@
     .row{grid-template-columns:22px 1fr;padding:11px 13px}
     .actions{grid-column:2;justify-content:flex-start;margin-top:2px}
     .noterow{padding-left:34px}
+    .notaview{margin-left:34px}
     .foot{padding:0 18px 60px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -538,14 +550,35 @@ function bloco(mod, aulas, comAdd){
       const ta = document.createElement("textarea");
       ta.placeholder = "Roteiro, tela a mostrar, o que falar, pendências…";
       ta.value = estado.notas[a.id] || "";
+      const fechar = ()=>{ notaAberta = null; salvar(); pintarTudo(); };
       ta.oninput = ()=>{
         if(ta.value.trim()) estado.notas[a.id]=ta.value; else delete estado.notas[a.id];
         salvar(); bn.classList.toggle("has", !!ta.value.trim());
-        pintarTopo();
       };
-      nr.appendChild(ta);
+      ta.onkeydown = e=>{
+        if(e.key==="Escape"){ e.preventDefault(); fechar(); }
+        if(e.key==="Enter" && (e.metaKey||e.ctrlKey)){ e.preventDefault(); fechar(); }
+      };
+      const acoes = document.createElement("div");
+      acoes.className = "noteacts";
+      const bSalvar = document.createElement("button");
+      bSalvar.className = "notesave";
+      bSalvar.textContent = "Salvar";
+      bSalvar.onclick = fechar;
+      const dica = document.createElement("span");
+      dica.className = "notehint";
+      dica.textContent = "salva sozinho enquanto você escreve";
+      acoes.append(bSalvar, dica);
+      nr.append(ta, acoes);
       row.appendChild(nr);
       setTimeout(()=>ta.focus(),0);
+    } else if(estado.notas[a.id]){
+      const nv = document.createElement("button");
+      nv.className = "notaview";
+      nv.textContent = estado.notas[a.id];
+      nv.setAttribute("aria-label","Nota da aula. Clique para editar.");
+      nv.onclick = ()=>{ notaAberta = a.id; pintarMain(); };
+      row.appendChild(nv);
     }
 
     box.appendChild(row);
