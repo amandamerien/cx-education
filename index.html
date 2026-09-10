@@ -138,10 +138,19 @@
   .notehint{font-size:12px;color:var(--muted)}
   .notaview{
     grid-column:1/-1;margin:1px 0 3px 38px;padding:8px 11px;
-    font-family:inherit;font-size:13px;line-height:1.45;text-align:left;
     color:var(--ink-soft);background:#fbfcf8;
     border:1px solid var(--line);border-left:3px solid var(--lime-deep);border-radius:8px;
+  }
+  .notatexto{
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    width:100%;padding:0;border:none;background:none;text-align:left;
+    font-family:inherit;font-size:13px;line-height:1.45;color:inherit;
     white-space:pre-wrap;overflow-wrap:anywhere;
+  }
+  .notaview.aberta .notatexto{display:block;-webkit-line-clamp:unset;overflow:visible}
+  .notatoggle{
+    border:none;background:none;padding:5px 0 0;font-size:12px;color:var(--muted);
+    text-decoration:underline;text-underline-offset:3px;
   }
   .notaview:hover{background:#f3f6ea}
   .addrow{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);background:#fafbf7}
@@ -362,6 +371,7 @@ let moduloAtivo = CURRICULO[0].id;
 let filtro = "todas";
 let busca = "";
 let notaAberta = null;
+let expandidas = new Set();
 let salvando = null;
 
 /* ---------- persistência ---------- */
@@ -453,7 +463,22 @@ function visiveis(mod){
   });
 }
 
+function ajustarNotas(){
+  document.querySelectorAll(".notaview").forEach(nv=>{
+    const txt = nv.querySelector(".notatexto");
+    const bt = nv.querySelector(".notatoggle");
+    if(!txt || !bt) return;
+    const cortado = txt.scrollHeight > txt.clientHeight + 2;
+    bt.hidden = !(cortado || nv.classList.contains("aberta"));
+  });
+}
+
 function pintarMain(){
+  desenharMain();
+  requestAnimationFrame(ajustarNotas);
+}
+
+function desenharMain(){
   const main = document.getElementById("main");
   main.innerHTML = "";
 
@@ -573,11 +598,24 @@ function bloco(mod, aulas, comAdd){
       row.appendChild(nr);
       setTimeout(()=>ta.focus(),0);
     } else if(estado.notas[a.id]){
-      const nv = document.createElement("button");
-      nv.className = "notaview";
-      nv.textContent = estado.notas[a.id];
-      nv.setAttribute("aria-label","Nota da aula. Clique para editar.");
-      nv.onclick = ()=>{ notaAberta = a.id; pintarMain(); };
+      const aberta = expandidas.has(a.id);
+      const nv = document.createElement("div");
+      nv.className = "notaview" + (aberta ? " aberta" : "");
+      const txt = document.createElement("button");
+      txt.className = "notatexto";
+      txt.textContent = estado.notas[a.id];
+      txt.setAttribute("aria-expanded", String(aberta));
+      const bt = document.createElement("button");
+      bt.className = "notatoggle";
+      bt.hidden = true;
+      bt.textContent = aberta ? "recolher" : "ver tudo";
+      const alterna = ()=>{
+        if(expandidas.has(a.id)) expandidas.delete(a.id); else expandidas.add(a.id);
+        pintarMain();
+      };
+      txt.onclick = alterna;
+      bt.onclick = alterna;
+      nv.append(txt, bt);
       row.appendChild(nv);
     }
 
