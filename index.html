@@ -473,9 +473,16 @@ function ajustarNotas(){
   });
 }
 
+function agendarAjuste(){
+  // dois quadros: o clamp de linhas só vale depois que o navegador
+  // faz um passo de layout com o elemento já inserido. Medir antes
+  // disso devolve scrollHeight == clientHeight e o botão nasce oculto.
+  requestAnimationFrame(()=>requestAnimationFrame(ajustarNotas));
+}
+
 function pintarMain(){
   desenharMain();
-  requestAnimationFrame(ajustarNotas);
+  agendarAjuste();
 }
 
 function desenharMain(){
@@ -678,9 +685,17 @@ document.getElementById("reset").onclick = ()=>{
   salvar(); pintarTudo(); aviso("Pauta zerada.");
 };
 
+let redimensionando = null;
+window.addEventListener("resize", ()=>{
+  clearTimeout(redimensionando);
+  redimensionando = setTimeout(ajustarNotas, 150);
+});
+
 (async function(){
   await carregar();
   pintarTudo();
+  // a fonte troca depois do primeiro paint e muda a altura das linhas
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(ajustarNotas);
 })();
 </script>
 </body>
